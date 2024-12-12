@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document Q&A</title>
+    <link rel="icon" href="../static/favicon.ico" type="image/x-icon">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+        }
+        .results {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            background: #f9f9f9;
+        }
+        .question-container {
+            margin-top: 20px;
+        }
+        .question-container input {
+            width: 80%;
+            padding: 10px;
+            margin-right: 10px;
+        }
+        .question-container button {
+            padding: 10px 20px;
+        }
+        .answer {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            background: #e9ffe9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Document Q&A</h1>
+
+        <div>
+            <h2>Upload Document</h2>
+            <form id="uploadForm">
+                <input type="file" id="fileInput" accept="image/*">
+                <button type="submit">Upload</button>
+            </form>
+            <p id="uploadMessage"></p>
+        </div>
+
+        <div id="parsedResults" class="results" style="display: none;">
+            <h2>Parsed Results</h2>
+            <pre id="resultsContent"></pre>
+        </div>
+
+        <div class="question-container">
+            <h2>Ask a Question</h2>
+            <input type="text" id="questionInput" placeholder="Enter your question here...">
+            <button id="askButton">Ask</button>
+        </div>
+
+        <div id="answerContainer" class="answer" style="display: none;">
+            <h2>Answer</h2>
+            <p id="answerContent"></p>
+        </div>
+    </div>
+
+    <script>
+        const uploadForm = document.getElementById('uploadForm');
+        const fileInput = document.getElementById('fileInput');
+        const uploadMessage = document.getElementById('uploadMessage');
+        const parsedResults = document.getElementById('parsedResults');
+        const resultsContent = document.getElementById('resultsContent');
+        const questionInput = document.getElementById('questionInput');
+        const askButton = document.getElementById('askButton');
+        const answerContainer = document.getElementById('answerContainer');
+        const answerContent = document.getElementById('answerContent');
+
+        uploadForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const file = fileInput.files[0];
+            if (!file) {
+                uploadMessage.textContent = 'Please select a file to upload.';
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('http://127.0.0.1:5000/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    uploadMessage.textContent = 'Document uploaded successfully!';
+                    resultsContent.textContent = JSON.stringify(data.parsed_results, null, 2);
+                    parsedResults.style.display = 'block';
+                } else {
+                    uploadMessage.textContent = data.error || 'Failed to upload document.';
+                }
+            } catch (error) {
+                uploadMessage.textContent = 'Error: Unable to upload document.';
+            }
+        });
+
+        askButton.addEventListener('click', async () => {
+            const question = questionInput.value.trim();
+            if (!question) {
+                alert('Please enter a question.');
+                return;
+            }
+
+            try {
+                const response = await fetch('http://127.0.0.1:5000/ask', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ question })
+                });
+
+                const data = await response.json();
+                console.log(data)
+                if (response.ok) {
+                    answerContainer.textContent = JSON.stringify(data.answer, null, 2);
+                    answerContainer.style.display = 'block';
+                } else {
+                    answerContent.textContent = data.error || 'Failed to get an answer.';
+                    answerContainer.style.display = 'block';
+                }
+            } catch (error) {
+                answerContent.textContent = 'Error: Unable to get an answer.';
+                answerContainer.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>
